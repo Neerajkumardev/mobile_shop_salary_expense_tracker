@@ -9,28 +9,17 @@ import io
 import json
 
 # --- 1. FIREBASE CONNECTION (STRICT REPAIR VERSION) ---
+
 def init_firebase():
     if not firebase_admin._apps:
-        try:
-            # Load the JSON file from your GitHub repository
-            with open("firebase_key.json", "r") as f:
-                key_data = json.load(f)
-            
-            # THE CRITICAL FIX: Ensures the private key has real newlines
-            # This solves the 'RefreshError' and 'Invalid JWT' on Cloud servers
-            if "private_key" in key_data:
-                key_data["private_key"] = key_data["private_key"].replace("\\n", "\n")
-            
-            cred = credentials.Certificate(key_data)
-            firebase_admin.initialize_app(cred, {
-                'databaseURL': 'https://abcsalarytracker-default-rtdb.firebaseio.com/'
-            })
-        except Exception as e:
-            st.error(f"Cloud Connection Failed: {e}")
+        key_data = dict(st.secrets["firebase_key"])
+        cred = credentials.Certificate(key_data)
 
-# Run initialization
+        firebase_admin.initialize_app(cred, {
+            "databaseURL": "https://abcsalarytracker-default-rtdb.firebaseio.com/"
+        })
+
 init_firebase()
-
 # --- 2. PDF GENERATION FUNCTION ---
 def create_pdf(shop_name, month, year, staff_results, shop_results, total_sales, total_out, profit):
     pdf = FPDF()
@@ -213,4 +202,5 @@ with tab3:
     if history:
         h_df = pd.DataFrame.from_dict(history, orient='index')
         st.bar_chart(h_df[['sales', 'profit']])
+
         st.dataframe(h_df, width='stretch')
